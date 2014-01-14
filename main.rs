@@ -415,7 +415,7 @@ fn test_sub() {
 
 #[test]
 fn test_mul() {
-    assert!(eval("(*)") == Number(~"0"));
+    assert!(eval("(*)") == Number(~"1"));
     assert!(eval("(* 2)") == Number(~"2"));
     assert!(eval("(* 2 3)") == Number(~"6"));
     assert!(eval("(* 2 0)") == Number(~"0"));
