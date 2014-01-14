@@ -9,6 +9,7 @@ enum Element {
     Number(~str),
     String(~str),
     ParseError(~str),
+    EvalError(~str),
     List(~[Element]),
     Vec(~[Element]),
     nil
@@ -187,7 +188,11 @@ fn sub(list: &[Element]) -> Element
     match vals {
         Some(is) => {
             match is.len() {
-                0 => Number(~"0"),
+                0 => EvalError(~"-: Wrong number of args (0)"),
+                1 => {
+                    let subbed = 0 - is[0];
+                    Number(subbed.to_str())
+                },
                 _ => {
                     let first = is[0];
                     let tail = is.slice_from(1);
@@ -402,8 +407,8 @@ fn test_plus() {
 
 #[test]
 fn test_sub() {
-    assert!(eval("(-)") == Number(~"0"));
-    assert!(eval("(- 1)") == Number(~"1"));
+    assert!(eval("(-)") == EvalError(~"-: Wrong number of args (0)"));
+    assert!(eval("(- 1)") == Number(~"-1"));
     assert!(eval("(- 1 1)") == Number(~"0"));
     assert!(eval("(- 2 3)") == Number(~"-1"));
     assert!(eval("(- 5 3)") == Number(~"2"));
@@ -413,7 +418,7 @@ fn test_sub() {
 
 #[test]
 fn test_mul() {
-    assert!(eval("(*)") == Number(~"0"));
+    assert!(eval("(*)") == Number(~"1"));
     assert!(eval("(* 2)") == Number(~"2"));
     assert!(eval("(* 2 3)") == Number(~"6"));
     assert!(eval("(* 2 0)") == Number(~"0"));
