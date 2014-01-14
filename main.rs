@@ -208,7 +208,7 @@ fn mul(list: &[Element]) -> Element
     match vals {
         Some(is) => {
             match is.len() {
-                0 => Number(~"0"),
+                0 => Number(~"1"),
                 _ => {
                     let muld = is.iter().fold(1, |a, &b| {
                         a * b
