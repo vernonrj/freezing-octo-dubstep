@@ -389,6 +389,8 @@ fn test_basic_eval() {
     assert!(eval("()\n") == List(~[]));
     assert!(eval("[]") == Vec(~[]));
     assert!(eval("\"\"") == String(~""));
+    assert!(eval("\"test string\"") == String(~"test string"));
+    assert!(eval("\"(+ 1 1)\"") == String(~"(+ 1 1)"));
 }
 
 #[test]
