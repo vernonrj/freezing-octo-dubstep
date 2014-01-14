@@ -14,14 +14,14 @@ enum Element {
     nil
 }
 
-fn tokenize_firstpass(s: &str) -> ~[~str]
+fn tokenize_firstpass(s: &str) -> Option<~[~str]>
 {
     let mut v: ~[~str] = ~[];
     let mut index = 0;
     let mut tok_start = 0;
     let mut inside_string = false;
     let mut stringbuilder = ~"";
-    let ss = s.replace(",", " ");
+    let ss = s.trim().replace(",", " ");
     while index < ss.len() {
         let c: char = ss.char_at(index);
         if "()[] ".contains(c.to_str()) && !inside_string {
@@ -45,10 +45,13 @@ fn tokenize_firstpass(s: &str) -> ~[~str]
         }
         index += 1;
     }
+    if inside_string {
+        return None;
+    }
     if tok_start != index {
         v.push(ss.slice(tok_start, index).to_owned());
     }
-    return v;
+    return Some(v);
 }
 
 fn do_tokenize_structure(tokens: &[~str], start_index: uint, num_parens: uint) -> (uint, Element)
@@ -135,7 +138,11 @@ fn tokenize_infer_types(token: Element) -> Element
 #[allow(dead_code)]
 fn tokenize(s: &str) -> Element
 {
-    let tokenized: ~[~str] = tokenize_firstpass(s);
+    let maybe_tokenized: Option<~[~str]> = tokenize_firstpass(s);
+    let tokenized = match maybe_tokenized {
+        Some(ss) => ss,
+        None => return ParseError(~"unbalanced string quotes")
+    };
     let elems = tokenize_structure(tokenized);
     match elems {
         ParseError(_) => return elems,
@@ -266,29 +273,29 @@ fn main()
 #[test]
 fn test_tokenizer_firstpass() {
     // empty
-    assert!(tokenize_firstpass("") == ~[]);
+    assert!(tokenize_firstpass("") == Some(~[]));
     // stripping elements
-    assert!(tokenize_firstpass(",") == ~[]);
+    assert!(tokenize_firstpass(",") ==  Some(~[]));
     // single elements
-    assert!(tokenize_firstpass("1") == ~[~"1"]);
-    assert!(tokenize_firstpass("()") == ~[~"(", ~")"]);
-    assert!(tokenize_firstpass("(1)") == ~[~"(", ~"1", ~")"]);
+    assert!(tokenize_firstpass("1") == Some(~[~"1"]));
+    assert!(tokenize_firstpass("()") == Some(~[~"(", ~")"]));
+    assert!(tokenize_firstpass("(1)") == Some(~[~"(", ~"1", ~")"]));
     // multiple elements
-    assert!(tokenize_firstpass("1 2") == ~[~"1", ~"2"]);
-    assert!(tokenize_firstpass("+ 1 2") == ~[~"+", ~"1", ~"2"]);
-    assert!(tokenize_firstpass("(+ 1 2)") == ~[~"(", ~"+", ~"1", ~"2", ~")"]);
-    assert!(tokenize_firstpass(" (+ 1 2)") == ~[~"(", ~"+", ~"1", ~"2", ~")"]);
-    assert!(tokenize_firstpass("( + 1 2)") == ~[~"(", ~"+", ~"1", ~"2", ~")"]);
-    assert!(tokenize_firstpass("(+ 1 (+ 2 3))") == ~[~"(", ~"+", ~"1",
-                                                     ~"(", ~"+", ~"2", ~"3",
-                                                     ~")", ~")"]);
+    assert!(tokenize_firstpass("1 2") == Some(~[~"1", ~"2"]));
+    assert!(tokenize_firstpass("+ 1 2") == Some(~[~"+", ~"1", ~"2"]));
+    assert!(tokenize_firstpass("(+ 1 2)") == Some(~[~"(", ~"+", ~"1", ~"2", ~")"]));
+    assert!(tokenize_firstpass(" (+ 1 2)") == Some(~[~"(", ~"+", ~"1", ~"2", ~")"]));
+    assert!(tokenize_firstpass("( + 1 2)") == Some(~[~"(", ~"+", ~"1", ~"2", ~")"]));
+    assert!(tokenize_firstpass("(+ 1 (+ 2 3))") == Some(~[~"(", ~"+", ~"1",
+                                                        ~"(", ~"+", ~"2", ~"3",
+                                                        ~")", ~")"]));
     // vectors
-    assert!(tokenize_firstpass("[]") == ~[~"[", ~"]"]);
-    assert!(tokenize_firstpass("[1 2]") == ~[~"[", ~"1", ~"2", ~"]"]);
-    assert!(tokenize_firstpass("[1, 2]") == ~[~"[", ~"1", ~"2", ~"]"]);
+    assert!(tokenize_firstpass("[]") == Some(~[~"[", ~"]"]));
+    assert!(tokenize_firstpass("[1 2]") == Some(~[~"[", ~"1", ~"2", ~"]"]));
+    assert!(tokenize_firstpass("[1, 2]") == Some(~[~"[", ~"1", ~"2", ~"]"]));
     // strings
-    assert!(tokenize_firstpass("\"\"") == ~[~"\"\""]);
-    assert!(tokenize_firstpass("\"hello\"") == ~[~"\"hello\""]);
+    assert!(tokenize_firstpass("\"\"") == Some(~[~"\"\""]));
+    assert!(tokenize_firstpass("\"hello\"") == Some(~[~"\"hello\""]));
 }
 
 #[test]
@@ -375,8 +382,11 @@ fn test_tokenizer_errors() {
 #[test]
 fn test_basic_eval() {
     assert!(eval("1") == Number(~"1"));
+    assert!(eval("1\n") == Number(~"1"));
     assert!(eval("") == nil);
+    assert!(eval("\n") == nil);
     assert!(eval("()") == List(~[]));
+    assert!(eval("()\n") == List(~[]));
     assert!(eval("[]") == Vec(~[]));
     assert!(eval("\"\"") == String(~""));
 }
