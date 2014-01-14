@@ -1,5 +1,6 @@
 use std::io::buffered::BufferedReader;
 use std::io::stdin;
+use std::vec;
 
 
 
@@ -8,6 +9,7 @@ enum Element {
     Symbol(~str),
     Number(~str),
     String(~str),
+    Character(char),
     ParseError(~str),
     EvalError(~str),
     List(~[Element]),
@@ -132,6 +134,13 @@ fn tokenize_infer_types(token: Element) -> Element
         Symbol(s) => {
             Number(s)
         },
+        Vec(s) => {
+            let mut v: ~[Element] = ~[];
+            for elem in s.iter() {
+                v.push(tokenize_infer_types(elem.clone()));
+            }
+            Vec(v)
+        }
         _ => token
     }
 }
@@ -251,10 +260,30 @@ fn div(list: &[Element]) -> Element
     }
 }
 
+
+fn concat(more: &[Element]) -> Element
+{
+    let mut unwrapped: ~[~[Element]] = ~[];
+    for elem in more.iter() {
+        unwrapped.push(match elem {
+            &List(ref s) => s.to_owned(),
+            &Vec(ref s) => s.to_owned(),
+            &String(ref s) => s.chars().map(|x| Character(x)).collect(),
+            _ => return EvalError(~"not a concatable collection type")
+        });
+    }
+    let mut coll: ~[Element] = ~[];
+    for &ref elem in unwrapped.iter() {
+        coll = vec::append(coll, *elem);
+    }
+    List(coll)
+}
+
+
 fn eval_top(list: ~[Element]) -> Element
 {
     if list.len() < 1 {
-        return List(list);
+        return List(list.to_owned());
     }
     let vals: ~[Element] = list.slice_from(1).to_owned();
     let vals_expanded = vals.map(|x| do_eval(x.clone()));
@@ -263,6 +292,7 @@ fn eval_top(list: ~[Element]) -> Element
         Symbol(~"-") => sub(vals_expanded),
         Symbol(~"*") => mul(vals_expanded),
         Symbol(~"/") => div(vals_expanded),
+        Symbol(~"concat") => concat(vals_expanded),
         List(l) => do_eval(List(l)),
         _ => ParseError(~"Unrecognized operation")
     }
@@ -390,6 +420,8 @@ fn test_tokenizer_inference() {
             == List(~[Symbol(~"+"), Number(~"1")]));
     assert!(tokenize_infer_types(String(~"hello"))
             == String(~"hello"));
+    assert!(tokenize_infer_types(Vec(~[Symbol(~"1"), Symbol(~"2")]))
+            == Vec(~[Number(~"1"), Number(~"2")]));
 }
 
 #[test]
@@ -399,6 +431,7 @@ fn test_tokenizer() {
     assert!(tokenize("(- 5 1)") == List(~[Symbol(~"-"), Number(~"5"), Number(~"1")]));
     assert!(tokenize("1") == Number(~"1"));
     assert!(tokenize("\"hello\"") == String(~"hello"));
+    assert!(tokenize("[1 2 3]") == Vec(~[Number(~"1"), Number(~"2"), Number(~"3")]));
 }
 
 #[test]
@@ -461,4 +494,13 @@ fn test_div() {
     assert!(eval("(/ 2 1)") == Number(~"2"));
     assert!(eval("(/ 4 2)") == Number(~"2"));
     assert!(eval("(/ 100 2 2 5)") == Number(~"5"));
+}
+
+#[test]
+fn test_concat() {
+    assert!(eval("(concat [1] [2])") == List(~[Number(~"1"), Number(~"2")]));
+    assert!(eval("(concat \"ab\" \"cd\")") == List(~[Character('a'),
+                                                     Character('b'),
+                                                     Character('c'),
+                                                     Character('d')]));
 }
