@@ -168,7 +168,7 @@ fn unwrap_to_nums<T: FromStr + Clone>(list: &[Element]) -> Option<~[T]>
     }
 }
 
-fn plus(list: &[Element]) -> Element
+fn add(list: &[Element]) -> Element
 {
     let vals: Option<~[int]> = unwrap_to_nums(list);
     match vals {
@@ -196,7 +196,7 @@ fn sub(list: &[Element]) -> Element
                 _ => {
                     let first = is[0];
                     let tail = is.slice_from(1);
-                    let subbed = first + tail.iter().fold(0, |a, &b| {
+                    let subbed = tail.iter().fold(first, |a, &b| {
                         a - b
                     });
                     Number(subbed.to_str())
@@ -226,6 +226,31 @@ fn mul(list: &[Element]) -> Element
     }
 }
 
+fn div(list: &[Element]) -> Element
+{
+    let vals: Option<~[int]> = unwrap_to_nums(list);
+    match vals {
+        Some(is) => {
+            match is.len() {
+                0 => EvalError(~"/: Wrong number of args (0)"),
+                1 => {
+                    let divd = 1 / is[0];
+                    Number(divd.to_str())
+                },
+                _ => {
+                    let first = is[0];
+                    let tail = is.slice_from(1);
+                    let divd = tail.iter().fold(first, |a, &b| {
+                        a / b
+                    });
+                    Number(divd.to_str())
+                }
+            }
+        },
+        None => ParseError(~"/: invalid value")
+    }
+}
+
 fn eval_top(list: ~[Element]) -> Element
 {
     if list.len() < 1 {
@@ -234,9 +259,10 @@ fn eval_top(list: ~[Element]) -> Element
     let vals: ~[Element] = list.slice_from(1).to_owned();
     let vals_expanded = vals.map(|x| do_eval(x.clone()));
     match list[0] {
-        Symbol(~"+") => plus(vals_expanded),
+        Symbol(~"+") => add(vals_expanded),
         Symbol(~"-") => sub(vals_expanded),
         Symbol(~"*") => mul(vals_expanded),
+        Symbol(~"/") => div(vals_expanded),
         List(l) => do_eval(List(l)),
         _ => ParseError(~"Unrecognized operation")
     }
@@ -397,7 +423,7 @@ fn test_basic_eval() {
 }
 
 #[test]
-fn test_plus() {
+fn test_add() {
     assert!(eval("(+)") == Number(~"0"));
     assert!(eval("(+ 5)") == Number(~"5"));
     assert!(eval("(+ 1 1)") == Number(~"2"));
@@ -425,4 +451,12 @@ fn test_mul() {
     assert!(eval("(* 4 -1)") == Number(~"-4"));
 }
 
-
+#[test]
+fn test_div() {
+    assert!(eval("(/)") == EvalError(~"/: Wrong number of args (0)"));
+    assert!(eval("(/ 1)") == Number(~"1"));
+    assert!(eval("(/ 2)") == Number(~"0"));
+    assert!(eval("(/ 2 1)") == Number(~"2"));
+    assert!(eval("(/ 4 2)") == Number(~"2"));
+    assert!(eval("(/ 100 2 2 5)") == Number(~"5"));
+}
