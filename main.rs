@@ -267,6 +267,28 @@ fn div(list: &[Element]) -> Element
     }
 }
 
+fn modfn(list: &[Element]) -> Element
+{
+    let vals: Option<~[int]> = unwrap_to_nums(list);
+    match vals {
+        Some(is) => {
+            let isl = is.len();
+            match isl {
+                2 => {
+                    let first = is[0];
+                    let second = is[1];
+                    if second == 0 {
+                        return EvalError(~"%: Divide by zero");
+                    }
+                    let modd = first % second;
+                    Number(modd.to_str())
+                },
+                _ => EvalError(format!("%: Wrong number of args ({:u})", isl))
+            }
+        },
+        None => ParseError(~"%: invalid value")
+    }
+}
 
 fn concat(more: &[Element]) -> Element
 {
@@ -299,6 +321,7 @@ fn eval_top(list: ~[Element]) -> Element
         Symbol(~"-") => sub(vals_expanded),
         Symbol(~"*") => mul(vals_expanded),
         Symbol(~"/") => div(vals_expanded),
+        Symbol(~"%") => modfn(vals_expanded),
         Symbol(~"concat") => concat(vals_expanded),
         List(l) => do_eval(List(l)),
         _ => ParseError(~"Unrecognized operation")
@@ -503,6 +526,19 @@ fn test_div() {
     assert!(eval("(/ 100 2 2 5)") == Number(~"5"));
     assert!(eval("(/ 0)") == EvalError(~"/: Divide by zero"));
     assert!(eval("(/ 10 0)") == EvalError(~"/: Divide by zero"));
+}
+
+#[test]
+fn test_mod() {
+    assert!(eval("(%)") == EvalError(~"%: Wrong number of args (0)"));
+    assert!(eval("(% 1)") == EvalError(~"%: Wrong number of args (1)"));
+    assert!(eval("(% 1 2 3)") == EvalError(~"%: Wrong number of args (3)"));
+    assert!(eval("(% 1 0)") == EvalError(~"%: Divide by zero"));
+    assert!(eval("(% 1 1)") == Number(~"0"));
+    assert!(eval("(% 10 1)") == Number(~"0"));
+    assert!(eval("(% 10 7)") == Number(~"3"));
+    assert!(eval("(% 10 -3)") == Number(~"1"));
+    assert!(eval("(% -10 3)") == Number(~"-1"));
 }
 
 #[test]
