@@ -4,4 +4,4 @@ before_install:
 install:
     - sudo apt-get install rust-nightly
 script:
-    - rustc --test main.rs && ./main
+    - rustc -v && rustc --test main.rs && ./main
