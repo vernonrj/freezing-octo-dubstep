@@ -501,6 +501,8 @@ fn test_div() {
     assert!(eval("(/ 2 1)") == Number(~"2"));
     assert!(eval("(/ 4 2)") == Number(~"2"));
     assert!(eval("(/ 100 2 2 5)") == Number(~"5"));
+    assert!(eval("(/ 0)") == EvalError(~"/: Divide by zero"));
+    assert!(eval("(/ 10 0)") == EvalError(~"/: Divide by zero"));
 }
 
 #[test]
