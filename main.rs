@@ -243,12 +243,19 @@ fn div(list: &[Element]) -> Element
             match is.len() {
                 0 => EvalError(~"/: Wrong number of args (0)"),
                 1 => {
+                    if is[0] == 0 {
+                        return EvalError(~"/: Divide by zero");
+                    }
                     let divd = 1 / is[0];
                     Number(divd.to_str())
                 },
                 _ => {
                     let first = is[0];
                     let tail = is.slice_from(1);
+                    let mut zeros = tail.iter().filter(|&a| *a == 0);
+                    if zeros.len() > 0 {
+                        return EvalError(~"/: Divide by zero");
+                    }
                     let divd = tail.iter().fold(first, |a, &b| {
                         a / b
                     });
@@ -324,7 +331,7 @@ fn main()
     let mut stdin = BufferedReader::new(stdin());
     for line in stdin.lines() {
         let parsed = eval(line);
-        println(format!("{:?}", parsed));
+        println!("{:?}", parsed);
     }
 }
 
