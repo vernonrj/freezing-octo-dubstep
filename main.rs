@@ -7,7 +7,7 @@ use std::vec;
 #[deriving(Clone, Eq)]
 enum Element {
     Symbol(~str),
-    Number(~str),
+    Number(i64),
     String(~str),
     Character(char),
     ParseError(~str),
@@ -132,7 +132,10 @@ fn tokenize_infer_types(token: Element) -> Element
             List(v)
         },
         Symbol(s) => {
-            Number(s)
+            match from_str::<i64>(s) {
+                Some(i) => Number(i),
+                None => EvalError(~"value cannot be converted to number")
+            }
         },
         Vec(s) => {
             let mut v: ~[Element] = ~[];
@@ -162,11 +165,11 @@ fn tokenize(s: &str) -> Element
 }
 
 
-fn unwrap_to_nums<T: FromStr + Clone>(list: &[Element]) -> Option<~[T]>
+fn unwrap_to_nums(list: &[Element]) -> Option<~[i64]>
 {
     let is = list.map(|x| {
         match x {
-            &Number(ref s) => from_str::<T>(*s),
+            &Number(ref s) => Some(*s),
             _ => None
         }
     });
@@ -179,13 +182,13 @@ fn unwrap_to_nums<T: FromStr + Clone>(list: &[Element]) -> Option<~[T]>
 
 fn add(list: &[Element]) -> Element
 {
-    let vals: Option<~[int]> = unwrap_to_nums(list);
+    let vals: Option<~[i64]> = unwrap_to_nums(list);
     match vals {
         Some(is) => {
-            let sum: int = is.iter().fold(0, |a, &b| {
+            let sum: i64 = is.iter().fold(0, |a, &b| {
                 a + b
             });
-            Number(sum.to_str())
+            Number(sum)
         },
         None => ParseError(~"+: invalid value")
     }
@@ -193,14 +196,14 @@ fn add(list: &[Element]) -> Element
 
 fn sub(list: &[Element]) -> Element
 {
-    let vals: Option<~[int]> = unwrap_to_nums(list);
+    let vals: Option<~[i64]> = unwrap_to_nums(list);
     match vals {
         Some(is) => {
             match is.len() {
                 0 => EvalError(~"-: Wrong number of args (0)"),
                 1 => {
                     let subbed = 0 - is[0];
-                    Number(subbed.to_str())
+                    Number(subbed)
                 },
                 _ => {
                     let first = is[0];
@@ -208,7 +211,7 @@ fn sub(list: &[Element]) -> Element
                     let subbed = tail.iter().fold(first, |a, &b| {
                         a - b
                     });
-                    Number(subbed.to_str())
+                    Number(subbed)
                 }
             }
         },
@@ -218,16 +221,16 @@ fn sub(list: &[Element]) -> Element
 
 fn mul(list: &[Element]) -> Element
 {
-    let vals: Option<~[int]> = unwrap_to_nums(list);
+    let vals: Option<~[i64]> = unwrap_to_nums(list);
     match vals {
         Some(is) => {
             match is.len() {
-                0 => Number(~"1"),
+                0 => Number(1),
                 _ => {
                     let muld = is.iter().fold(1, |a, &b| {
                         a * b
                     });
-                    Number(muld.to_str())
+                    Number(muld)
                 }
             }
         },
@@ -237,7 +240,7 @@ fn mul(list: &[Element]) -> Element
 
 fn div(list: &[Element]) -> Element
 {
-    let vals: Option<~[int]> = unwrap_to_nums(list);
+    let vals: Option<~[i64]> = unwrap_to_nums(list);
     match vals {
         Some(is) => {
             match is.len() {
@@ -247,7 +250,7 @@ fn div(list: &[Element]) -> Element
                         return EvalError(~"/: Divide by zero");
                     }
                     let divd = 1 / is[0];
-                    Number(divd.to_str())
+                    Number(divd)
                 },
                 _ => {
                     let first = is[0];
@@ -259,7 +262,7 @@ fn div(list: &[Element]) -> Element
                     let divd = tail.iter().fold(first, |a, &b| {
                         a / b
                     });
-                    Number(divd.to_str())
+                    Number(divd)
                 }
             }
         },
@@ -269,7 +272,7 @@ fn div(list: &[Element]) -> Element
 
 fn modfn(list: &[Element]) -> Element
 {
-    let vals: Option<~[int]> = unwrap_to_nums(list);
+    let vals: Option<~[i64]> = unwrap_to_nums(list);
     match vals {
         Some(is) => {
             let isl = is.len();
@@ -281,7 +284,7 @@ fn modfn(list: &[Element]) -> Element
                         return EvalError(~"%: Divide by zero");
                     }
                     let modd = first % second;
-                    Number(modd.to_str())
+                    Number(modd)
                 },
                 _ => EvalError(format!("%: Wrong number of args ({:u})", isl))
             }
@@ -445,23 +448,23 @@ fn test_tokenizer_structure_errors() {
 #[test]
 fn test_tokenizer_inference() {
     assert!(tokenize_infer_types(nil) == nil);
-    assert!(tokenize_infer_types(Symbol(~"1")) == Number(~"1"));
+    assert!(tokenize_infer_types(Symbol(~"1")) == Number(1));
     assert!(tokenize_infer_types(List(~[Symbol(~"+"), Symbol(~"1")]))
-            == List(~[Symbol(~"+"), Number(~"1")]));
+            == List(~[Symbol(~"+"), Number(1)]));
     assert!(tokenize_infer_types(String(~"hello"))
             == String(~"hello"));
     assert!(tokenize_infer_types(Vec(~[Symbol(~"1"), Symbol(~"2")]))
-            == Vec(~[Number(~"1"), Number(~"2")]));
+            == Vec(~[Number(1), Number(2)]));
 }
 
 #[test]
 fn test_tokenizer() {
     assert!(tokenize("") == nil);
-    assert!(tokenize("(+ 1 1)") == List(~[Symbol(~"+"), Number(~"1"), Number(~"1")]));
-    assert!(tokenize("(- 5 1)") == List(~[Symbol(~"-"), Number(~"5"), Number(~"1")]));
-    assert!(tokenize("1") == Number(~"1"));
+    assert!(tokenize("(+ 1 1)") == List(~[Symbol(~"+"), Number(1), Number(1)]));
+    assert!(tokenize("(- 5 1)") == List(~[Symbol(~"-"), Number(5), Number(1)]));
+    assert!(tokenize("1") == Number(1));
     assert!(tokenize("\"hello\"") == String(~"hello"));
-    assert!(tokenize("[1 2 3]") == Vec(~[Number(~"1"), Number(~"2"), Number(~"3")]));
+    assert!(tokenize("[1 2 3]") == Vec(~[Number(1), Number(2), Number(3)]));
 }
 
 #[test]
@@ -475,8 +478,8 @@ fn test_tokenizer_errors() {
 
 #[test]
 fn test_basic_eval() {
-    assert!(eval("1") == Number(~"1"));
-    assert!(eval("1\n") == Number(~"1"));
+    assert!(eval("1") == Number(1));
+    assert!(eval("1\n") == Number(1));
     assert!(eval("") == nil);
     assert!(eval("\n") == nil);
     assert!(eval("()") == List(~[]));
@@ -489,41 +492,41 @@ fn test_basic_eval() {
 
 #[test]
 fn test_add() {
-    assert!(eval("(+)") == Number(~"0"));
-    assert!(eval("(+ 5)") == Number(~"5"));
-    assert!(eval("(+ 1 1)") == Number(~"2"));
-    assert!(eval("(+ 4 5 6)") == Number(~"15"));
-    assert!(eval("(+ 5 -1)") == Number(~"4"));
+    assert!(eval("(+)") == Number(0));
+    assert!(eval("(+ 5)") == Number(5));
+    assert!(eval("(+ 1 1)") == Number(2));
+    assert!(eval("(+ 4 5 6)") == Number(15));
+    assert!(eval("(+ 5 -1)") == Number(4));
 }
 
 #[test]
 fn test_sub() {
     assert!(eval("(-)") == EvalError(~"-: Wrong number of args (0)"));
-    assert!(eval("(- 1)") == Number(~"-1"));
-    assert!(eval("(- 1 1)") == Number(~"0"));
-    assert!(eval("(- 2 3)") == Number(~"-1"));
-    assert!(eval("(- 5 3)") == Number(~"2"));
-    assert!(eval("(- 9 5 2)") == Number(~"2"));
-    assert!(eval("(- 4 -2)") == Number(~"6"));
+    assert!(eval("(- 1)") == Number(-1));
+    assert!(eval("(- 1 1)") == Number(0));
+    assert!(eval("(- 2 3)") == Number(-1));
+    assert!(eval("(- 5 3)") == Number(2));
+    assert!(eval("(- 9 5 2)") == Number(2));
+    assert!(eval("(- 4 -2)") == Number(6));
 }
 
 #[test]
 fn test_mul() {
-    assert!(eval("(*)") == Number(~"1"));
-    assert!(eval("(* 2)") == Number(~"2"));
-    assert!(eval("(* 2 3)") == Number(~"6"));
-    assert!(eval("(* 2 0)") == Number(~"0"));
-    assert!(eval("(* 4 -1)") == Number(~"-4"));
+    assert!(eval("(*)") == Number(1));
+    assert!(eval("(* 2)") == Number(2));
+    assert!(eval("(* 2 3)") == Number(6));
+    assert!(eval("(* 2 0)") == Number(0));
+    assert!(eval("(* 4 -1)") == Number(-4));
 }
 
 #[test]
 fn test_div() {
     assert!(eval("(/)") == EvalError(~"/: Wrong number of args (0)"));
-    assert!(eval("(/ 1)") == Number(~"1"));
-    assert!(eval("(/ 2)") == Number(~"0"));
-    assert!(eval("(/ 2 1)") == Number(~"2"));
-    assert!(eval("(/ 4 2)") == Number(~"2"));
-    assert!(eval("(/ 100 2 2 5)") == Number(~"5"));
+    assert!(eval("(/ 1)") == Number(1));
+    assert!(eval("(/ 2)") == Number(0));
+    assert!(eval("(/ 2 1)") == Number(2));
+    assert!(eval("(/ 4 2)") == Number(2));
+    assert!(eval("(/ 100 2 2 5)") == Number(5));
     assert!(eval("(/ 0)") == EvalError(~"/: Divide by zero"));
     assert!(eval("(/ 10 0)") == EvalError(~"/: Divide by zero"));
 }
@@ -534,16 +537,16 @@ fn test_mod() {
     assert!(eval("(% 1)") == EvalError(~"%: Wrong number of args (1)"));
     assert!(eval("(% 1 2 3)") == EvalError(~"%: Wrong number of args (3)"));
     assert!(eval("(% 1 0)") == EvalError(~"%: Divide by zero"));
-    assert!(eval("(% 1 1)") == Number(~"0"));
-    assert!(eval("(% 10 1)") == Number(~"0"));
-    assert!(eval("(% 10 7)") == Number(~"3"));
-    assert!(eval("(% 10 -3)") == Number(~"1"));
-    assert!(eval("(% -10 3)") == Number(~"-1"));
+    assert!(eval("(% 1 1)") == Number(0));
+    assert!(eval("(% 10 1)") == Number(0));
+    assert!(eval("(% 10 7)") == Number(3));
+    assert!(eval("(% 10 -3)") == Number(1));
+    assert!(eval("(% -10 3)") == Number(-1));
 }
 
 #[test]
 fn test_concat() {
-    assert!(eval("(concat [1] [2])") == List(~[Number(~"1"), Number(~"2")]));
+    assert!(eval("(concat [1] [2])") == List(~[Number(1), Number(2)]));
     assert!(eval("(concat \"ab\" \"cd\")") == List(~[Character('a'),
                                                      Character('b'),
                                                      Character('c'),
