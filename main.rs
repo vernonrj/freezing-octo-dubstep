@@ -243,12 +243,19 @@ fn div(list: &[Element]) -> Element
             match is.len() {
                 0 => EvalError(~"/: Wrong number of args (0)"),
                 1 => {
+                    if is[0] == 0 {
+                        return EvalError(~"/: Divide by zero");
+                    }
                     let divd = 1 / is[0];
                     Number(divd.to_str())
                 },
                 _ => {
                     let first = is[0];
                     let tail = is.slice_from(1);
+                    let mut zeros = tail.iter().filter(|&a| *a == 0);
+                    if zeros.len() > 0 {
+                        return EvalError(~"/: Divide by zero");
+                    }
                     let divd = tail.iter().fold(first, |a, &b| {
                         a / b
                     });
@@ -260,6 +267,28 @@ fn div(list: &[Element]) -> Element
     }
 }
 
+fn modfn(list: &[Element]) -> Element
+{
+    let vals: Option<~[int]> = unwrap_to_nums(list);
+    match vals {
+        Some(is) => {
+            let isl = is.len();
+            match isl {
+                2 => {
+                    let first = is[0];
+                    let second = is[1];
+                    if second == 0 {
+                        return EvalError(~"%: Divide by zero");
+                    }
+                    let modd = first % second;
+                    Number(modd.to_str())
+                },
+                _ => EvalError(format!("%: Wrong number of args ({:u})", isl))
+            }
+        },
+        None => ParseError(~"%: invalid value")
+    }
+}
 
 fn concat(more: &[Element]) -> Element
 {
@@ -292,6 +321,7 @@ fn eval_top(list: ~[Element]) -> Element
         Symbol(~"-") => sub(vals_expanded),
         Symbol(~"*") => mul(vals_expanded),
         Symbol(~"/") => div(vals_expanded),
+        Symbol(~"%") => modfn(vals_expanded),
         Symbol(~"concat") => concat(vals_expanded),
         List(l) => do_eval(List(l)),
         _ => ParseError(~"Unrecognized operation")
@@ -324,7 +354,7 @@ fn main()
     let mut stdin = BufferedReader::new(stdin());
     for line in stdin.lines() {
         let parsed = eval(line);
-        println(format!("{:?}", parsed));
+        println!("{:?}", parsed);
     }
 }
 
@@ -494,6 +524,21 @@ fn test_div() {
     assert!(eval("(/ 2 1)") == Number(~"2"));
     assert!(eval("(/ 4 2)") == Number(~"2"));
     assert!(eval("(/ 100 2 2 5)") == Number(~"5"));
+    assert!(eval("(/ 0)") == EvalError(~"/: Divide by zero"));
+    assert!(eval("(/ 10 0)") == EvalError(~"/: Divide by zero"));
+}
+
+#[test]
+fn test_mod() {
+    assert!(eval("(%)") == EvalError(~"%: Wrong number of args (0)"));
+    assert!(eval("(% 1)") == EvalError(~"%: Wrong number of args (1)"));
+    assert!(eval("(% 1 2 3)") == EvalError(~"%: Wrong number of args (3)"));
+    assert!(eval("(% 1 0)") == EvalError(~"%: Divide by zero"));
+    assert!(eval("(% 1 1)") == Number(~"0"));
+    assert!(eval("(% 10 1)") == Number(~"0"));
+    assert!(eval("(% 10 7)") == Number(~"3"));
+    assert!(eval("(% 10 -3)") == Number(~"1"));
+    assert!(eval("(% -10 3)") == Number(~"-1"));
 }
 
 #[test]
