@@ -16,5 +16,12 @@ build: clean
 	mkdir $(BUILD) || true
 	$(RUSTC) $(MAIN_FILE_SRC) -o $(MAIN_BINARY)
 
+build-tests: clean
+	mkdir $(BUILD) || true
+	$(RUSTC) $(MAIN_FILE_SRC) --test -o $(MAIN_BINARY)
+
+run-tests: build-tests
+	./$(MAIN_BINARY)
+
 run:
 	./$(MAIN_BINARY)

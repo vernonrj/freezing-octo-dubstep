@@ -4,4 +4,4 @@ before_install:
 install:
     - sudo apt-get install rust-0.9
 script:
-    - rustc -v && rustc --test main.rs && ./main
+    - make run-tests
