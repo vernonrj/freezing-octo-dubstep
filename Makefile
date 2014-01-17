@@ -1,27 +1,28 @@
 # Rust parameters
-ARCH=`uname -s`-`uname -r`-`uname -m`
+PROJECT_NAME=rusp
 SRC=.
 BUILD=build
-RUSTC=rustc -Z debug-info --out-dir $(BUILD) -L $(BUILD)
+RUSTC=rustc -Z debug-info -L $(BUILD)
 MAIN_FILE_SRC=$(SRC)/main.rs
 # TESTS_MODULE_SRC=$(SRC)/tests.rs
-MAIN_BINARY=$(BUILD)/rusp-$(ARCH)
+MAIN_BINARY=$(BUILD)/$(PROJECT_NAME)
+TEST_BINARY=$(MAIN_BINARY)-test
 
-all: build
+all: $(MAIN_BINARY) $(TEST_BINARY)
 
 clean:
 	rm -fr $(BUILD) || true
 
-build: clean
+$(MAIN_BINARY): $(MAIN_FILE_SRC)
 	mkdir $(BUILD) || true
 	$(RUSTC) $(MAIN_FILE_SRC) -o $(MAIN_BINARY)
 
-build-tests: clean
+$(TEST_BINARY): $(MAIN_FILE_SRC)
 	mkdir $(BUILD) || true
-	$(RUSTC) $(MAIN_FILE_SRC) --test -o $(MAIN_BINARY)
+	$(RUSTC) $(MAIN_FILE_SRC) --test -o $(TEST_BINARY)
 
-run-tests: build-tests
+run: $(MAIN_BINARY)
 	./$(MAIN_BINARY)
 
-run:
-	./$(MAIN_BINARY)
+test: $(TEST_BINARY)
+	./$(TEST_BINARY)
