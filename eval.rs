@@ -145,7 +145,7 @@ fn test_basic_eval() {
     assert!(eval("\"\"") == String(~""));
     assert!(eval("\"test string\"") == String(~"test string"));
     assert!(eval("\"(+ 1 1)\"") == String(~"(+ 1 1)"));
-    assert!(eval("[(+ 1 1)]") == List(~[Number(2)]));
+    assert!(eval("[(+ 1 1)]") == Vec(~[Number(2)]));
 }
 
 
