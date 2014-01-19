@@ -10,9 +10,9 @@ use types::{List, Vec};
 use types::{Function, FuncPrimitive};
 use types::EvalError;
 
-use funcs::{add, sub, mul, div, modfn, concat};
+use primitives::{add, sub, mul, div, modfn, equal, concat};
 
-use primitive::{RustFunc, BoundFn, Variable};
+use functypes::{RustFunc, BoundFn, Variable};
 
 
 pub struct Bindings {
@@ -27,6 +27,7 @@ impl Bindings {
         binding.insert(~"*", RustFunc::new(mul));
         binding.insert(~"/", RustFunc::new(div));
         binding.insert(~"%", RustFunc::new(modfn));
+        binding.insert(~"=", RustFunc::new(equal));
         binding.insert(~"concat", RustFunc::new(concat));
         binding.insert(~"inc", BoundFn::new([~"x"], tokenize("(+ x 1)")));
         binding.insert(~"dec", BoundFn::new([~"x"], tokenize("(- x 1)")));

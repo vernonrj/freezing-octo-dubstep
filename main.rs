@@ -5,10 +5,10 @@ use tokenizer::tokenize;
 
 use eval::Bindings;
 
-mod primitive;
+mod primitives;
 mod types;
+mod functypes;
 mod tokenizer;
-mod funcs;
 mod eval;
 
 

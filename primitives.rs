@@ -9,7 +9,7 @@ use std::vec;
 
 use types::Element;
 use types::EvalError;
-use types::{Number, String, List, Vec, Character};
+use types::{Number, String, Boolean, List, Vec, Character};
 
 use eval::eval;
 
@@ -168,7 +168,7 @@ pub fn concat(more: &[Element]) -> Element
 }
 
 
-fn equal(list: &[Element]) -> Element
+pub fn equal(list: &[Element]) -> Element
 {
     let list_len = list.len();
     match list_len {
