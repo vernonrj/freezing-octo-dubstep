@@ -1,6 +1,6 @@
 # Rust parameters
 PROJECT_NAME=rusp
-SRC=.
+SRC=src
 BUILD=build
 RUSTC=rustc -Z debug-info -L $(BUILD)
 MAIN_FILE_SRC=$(SRC)/main.rs
