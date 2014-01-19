@@ -4,12 +4,12 @@ use std::iter::Iterator;
 use tokenizer::tokenize;
 
 use types::Element;
-use types::Symbol;
+use types::{Symbol, Boolean, nil};
 use types::{List, Vec};
 use types::{Function, FuncPrimitive};
 use types::EvalError;
 
-use primitives::{add, sub, mul, div, modfn, equal, if_fn, concat};
+use primitives::{add, sub, mul, div, modfn, equal, concat};
 
 use functypes::{RustFunc, BoundFn, Variable};
 
@@ -31,9 +31,13 @@ impl Bindings {
         binding.insert(~"%", RustFunc::new(modfn));
         binding.insert(~"=", RustFunc::new(equal));
         binding.insert(~"concat", RustFunc::new(concat));
-        binding.insert(~"if", RustFunc::new(if_fn));
+        binding.insert(~"not", BoundFn::new([~"x"], tokenize("(if x false true)")));
+        binding.insert(~"if-not", BoundFn::new([~"test", ~"then", ~"else"],
+            tokenize("(if (not test) then else)")));
         binding.insert(~"inc", BoundFn::new([~"x"], tokenize("(+ x 1)")));
         binding.insert(~"dec", BoundFn::new([~"x"], tokenize("(- x 1)")));
+        binding.insert(~"factorial", BoundFn::new([~"x"],
+            tokenize("(if (= x 0) 1 (* x (factorial (dec x))))")));
         Bindings { bindings: ~[binding] }
     }
     #[allow(dead_code)]
@@ -72,26 +76,31 @@ impl Bindings {
             return List(form.to_owned());
         }
         let vals: ~[Element] = form.slice_from(1).to_owned();
-        let vals_expanded = vals.map(|x| b.eval(x.clone()));
         //println!("eval({:u}): finished expanding: {:?}", self.bindings.len(), vals_expanded);
         match form[0] {
             Symbol(ref sym) => {
                 // lookup in bindings
-                if b.contains_key(sym.to_owned()) {
+                if sym.clone() == ~"if" {
+                    // if is a special case
+                    self.if_fn(vals)
+                } else if b.contains_key(sym.to_owned()) {
                     let bound = b.get(sym.to_owned()).clone();
                     //println!("eval({:u}): sym {:?} resolves to {:?}",
                     //        self.bindings.len(), sym, bound);
+                    let vals_expanded = vals.map(|x| b.eval(x.clone()));
                     self.eval_form(~[bound] + vals_expanded)
                 } else {
                     EvalError(~"Symbol Not defined")
                 }
             },
             List(ref l) => {
+                let vals_expanded = vals.map(|x| b.eval(x.clone()));
                 let newform = ~[b.eval_form(*l)] + vals_expanded;
                 b.eval_form(newform)
             },
             FuncPrimitive(ref fptr) => {
                 // lookup name, pass the rest of the list in
+                let vals_expanded = vals.map(|x| b.eval(x.clone()));
                 let f = fptr.f;
                 f(vals_expanded)
             },
@@ -129,6 +138,21 @@ impl Bindings {
             _ => form
         }
     }
+    #[allow(dead_code)]
+    fn if_fn(&self, list: &[Element]) -> Element
+    {
+        let list_len = list.len();
+        if list_len > 3 || list_len < 2 {
+            return EvalError(format!("if: wrong number of args ({:u})", list_len));
+        }
+        let rest = list.slice_from(1);
+        match self.eval(list[0].clone()) {
+            Boolean(true) => self.eval(rest[0].clone()),
+            Boolean(false) if list_len > 2 => self.eval(rest[1].clone()),
+            Boolean(false) if list_len == 2 => nil,
+            _ => EvalError(~"if: first element must be boolean")
+        }
+    }
 }
 
 
@@ -139,6 +163,7 @@ pub fn eval(s: &str) -> Element
     let parsed = tokenize(s);
     bindings.eval(parsed)
 }
+
 
 
 #[test]
@@ -154,6 +179,14 @@ fn test_basic_eval() {
     assert!(eval("\"test string\"") == ::types::String(~"test string"));
     assert!(eval("\"(+ 1 1)\"") == ::types::String(~"(+ 1 1)"));
     assert!(eval("[(+ 1 1)]") == Vec(~[::types::Number(2)]));
+}
+
+#[test]
+fn test_if_fn() {
+    assert!(::eval::eval("(if true 1 0)") == ::types::Number(1));
+    assert!(::eval::eval("(if (= 5 5) 6 4)") == ::types::Number(6));
+    assert!(::eval::eval("(if (= 5 4) 6 4)") == ::types::Number(4));
+    assert!(::eval::eval("(if (= (+ 1 2) 3) true false)") == ::types::Boolean(true));
 }
 
 

@@ -9,7 +9,7 @@ use std::vec;
 
 use types::Element;
 use types::EvalError;
-use types::{Number, String, Boolean, List, Vec, Character, nil};
+use types::{Number, String, Boolean, List, Vec, Character};
 
 mod eval;
 mod types;
@@ -179,20 +179,6 @@ pub fn equal(list: &[Element]) -> Element
     Boolean(list.slice_from(1).iter().all(|x| x.clone() == first))
 }
 
-pub fn if_fn(list: &[Element]) -> Element
-{
-    let list_len = list.len();
-    if list_len > 3 || list_len < 2 {
-        return EvalError(format!("if: wrong number of args ({:u})", list_len));
-    }
-    let rest = list.slice_from(1);
-    match list[0] {
-        Boolean(true) => rest[0].clone(),
-        Boolean(false) if list_len > 2 => rest[1].clone(),
-        Boolean(false) if list_len == 2 => nil,
-        _ => EvalError(~"if: first element must be boolean")
-    }
-}
 
 
 #[test]
@@ -267,13 +253,5 @@ fn test_equal() {
     assert!(::eval::eval("(= [1 2] [1 2])") == Boolean(true));
     assert!(::eval::eval("(= [1 2] [1 3])") == Boolean(false));
     assert!(::eval::eval("(= [1 2 3] [1 2])") == Boolean(false));
-}
-
-#[test]
-fn test_if_fn() {
-    assert!(::eval::eval("(if true 1 0)") == Number(1));
-    assert!(::eval::eval("(if (= 5 5) 6 4)") == Number(6));
-    assert!(::eval::eval("(if (= 5 4) 6 4)") == Number(4));
-    assert!(::eval::eval("(if (= (+ 1 2) 3) true false)") == Boolean(true));
 }
 
