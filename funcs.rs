@@ -168,6 +168,25 @@ pub fn concat(more: &[Element]) -> Element
 }
 
 
+fn equal(list: &[Element]) -> Element
+{
+    let list_len = list.len();
+    match list_len {
+        0 => return EvalError(format!("=: wrong number of args ({:u}) passed", list_len)),
+        1 => return Boolean(true),
+        _ => ()
+    }
+    let first: Element = list[0].clone();
+    Boolean(list.slice_from(1).iter().all(|x| x.clone() == first))
+}
+
+//fn if_fn(list: &[Element]) -> Element
+//{
+//    let list_len = list.len();
+//    if list_len > 3 || list_len < 2 {
+//        return EvalError(format!("if: wrong number of args ({:u})", list_len));
+//    }
+//}
 
 
 #[test]
@@ -231,5 +250,16 @@ fn test_concat() {
                                                      Character('b'),
                                                      Character('c'),
                                                      Character('d')]));
+}
+
+#[test]
+fn test_equal() {
+    assert!(eval("(= 1 1)") == Boolean(true));
+    assert!(eval("(= 1 2)") == Boolean(false));
+    assert!(eval("(= 1 \"1\")") == Boolean(false));
+    assert!(eval("(= \"1\" \"1\")") == Boolean(true));
+    assert!(eval("(= [1 2] [1 2])") == Boolean(true));
+    assert!(eval("(= [1 2] [1 3])") == Boolean(false));
+    assert!(eval("(= [1 2 3] [1 2])") == Boolean(false));
 }
 
