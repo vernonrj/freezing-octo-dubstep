@@ -357,6 +357,7 @@ fn do_eval(list: Element) -> Element
 {
     match list {
         List(l) => eval_top(l),
+        Vec(v) => Vec(v.map(|x| do_eval(x.clone()))),
         _ => list
     }
 }
@@ -366,7 +367,7 @@ fn eval(s: &str) -> Element
 {
     let parsed = tokenize(s);
     match parsed {
-        List(_) => do_eval(parsed),
+        List(_) | Vec(_) => do_eval(parsed),
         _ => parsed
     }
 }
@@ -591,6 +592,7 @@ fn test_concat() {
                                                      Character('b'),
                                                      Character('c'),
                                                      Character('d')]));
+    assert!(eval("(concat [(+ 1 1)])") == List(~[Number(2)]));
 }
 
 #[test]
