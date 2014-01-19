@@ -11,14 +11,14 @@ TEST_BINARY=$(MAIN_BINARY)-test
 all: $(MAIN_BINARY) $(TEST_BINARY)
 
 clean:
-	rm -fr $(BUILD) || true
+	-rm -fr $(BUILD) || true
 
 $(MAIN_BINARY): $(MAIN_FILE_SRC)
-	mkdir $(BUILD) || true
+	mkdir -p $(BUILD) || true
 	$(RUSTC) $(MAIN_FILE_SRC) -o $(MAIN_BINARY)
 
 $(TEST_BINARY): $(MAIN_FILE_SRC)
-	mkdir $(BUILD) || true
+	mkdir -p $(BUILD) || true
 	$(RUSTC) $(MAIN_FILE_SRC) --test -o $(TEST_BINARY)
 
 run: $(MAIN_BINARY)
