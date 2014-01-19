@@ -134,9 +134,13 @@ fn tokenize_infer_types(token: Element) -> Element
             List(v)
         },
         Symbol(s) => {
-            match from_str::<i64>(s) {
-                Some(i) => Number(i),
-                None => EvalError(~"value cannot be converted to number")
+            if s == ~"true" || s == ~"false" {
+                Boolean(s == ~"true")
+            } else {
+                match from_str::<i64>(s) {
+                    Some(i) => Number(i),
+                    None => EvalError(~"value cannot be converted to number")
+                }
             }
         },
         Vec(s) => {
@@ -325,13 +329,20 @@ fn equal(list: &[Element]) -> Element
     Boolean(list.slice_from(1).iter().all(|x| x.clone() == first))
 }
 
-//fn if_fn(list: &[Element]) -> Element
-//{
-//    let list_len = list.len();
-//    if list_len > 3 || list_len < 2 {
-//        return EvalError(format!("if: wrong number of args ({:u})", list_len));
-//    }
-//}
+fn if_fn(list: &[Element]) -> Element
+{
+    let list_len = list.len();
+    if list_len > 3 || list_len < 2 {
+        return EvalError(format!("if: wrong number of args ({:u})", list_len));
+    }
+    let rest = list.slice_from(1);
+    match list[0] {
+        Boolean(true) => rest[0].clone(),
+        Boolean(false) if list_len > 2 => rest[1].clone(),
+        Boolean(false) if list_len == 2 => nil,
+        _ => EvalError(~"if: first element must be boolean")
+    }
+}
 
 fn eval_top(list: ~[Element]) -> Element
 {
@@ -348,6 +359,7 @@ fn eval_top(list: ~[Element]) -> Element
         Symbol(~"%") => modfn(vals_expanded),
         Symbol(~"=") => equal(vals_expanded),
         Symbol(~"concat") => concat(vals_expanded),
+        Symbol(~"if") => if_fn(vals_expanded),
         List(l) => do_eval(List(l)),
         _ => ParseError(~"Unrecognized operation")
     }
@@ -604,4 +616,12 @@ fn test_equal() {
     assert!(eval("(= [1 2] [1 2])") == Boolean(true));
     assert!(eval("(= [1 2] [1 3])") == Boolean(false));
     assert!(eval("(= [1 2 3] [1 2])") == Boolean(false));
+}
+
+#[test]
+fn test_if_fn() {
+    assert!(eval("(if true 1 0)") == Number(1));
+    assert!(eval("(if (= 5 5) 6 4)") == Number(6));
+    assert!(eval("(if (= 5 4) 6 4)") == Number(4));
+    assert!(eval("(if (= (+ 1 2) 3) true false)") == Boolean(true));
 }
