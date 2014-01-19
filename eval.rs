@@ -10,7 +10,7 @@ use types::{List, Vec};
 use types::{Function, FuncPrimitive};
 use types::EvalError;
 
-use primitives::{add, sub, mul, div, modfn, equal, concat};
+use primitives::{add, sub, mul, div, modfn, equal, if_fn, concat};
 
 use functypes::{RustFunc, BoundFn, Variable};
 
@@ -29,6 +29,7 @@ impl Bindings {
         binding.insert(~"%", RustFunc::new(modfn));
         binding.insert(~"=", RustFunc::new(equal));
         binding.insert(~"concat", RustFunc::new(concat));
+        binding.insert(~"if", RustFunc::new(if_fn));
         binding.insert(~"inc", BoundFn::new([~"x"], tokenize("(+ x 1)")));
         binding.insert(~"dec", BoundFn::new([~"x"], tokenize("(- x 1)")));
         Bindings { bindings: ~[binding] }
@@ -105,6 +106,7 @@ impl Bindings {
         //println!("eval({:u}): {:?}", self.bindings.len(), form);
         match form {
             List(l) => self.eval_form(l),
+            Vec(v) => Vec(v.map(|x| self.eval(x.clone()))),
             Symbol(ref sym) => {
                 // lookup in bindings
                 if self.contains_key(sym.to_owned()) {
@@ -143,6 +145,7 @@ fn test_basic_eval() {
     assert!(eval("\"\"") == String(~""));
     assert!(eval("\"test string\"") == String(~"test string"));
     assert!(eval("\"(+ 1 1)\"") == String(~"(+ 1 1)"));
+    assert!(eval("[(+ 1 1)]") == List(~[Number(2)]));
 }
 
 

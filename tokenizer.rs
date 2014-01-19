@@ -1,6 +1,6 @@
 use types::ParseError;
 use types::Symbol;
-use types::{Element, Number, String, List, Vec};
+use types::{Element, Number, String, Boolean, List, Vec};
 use types::nil;
 
 mod types;
@@ -120,9 +120,13 @@ fn tokenize_infer_types(token: Element) -> Element
             List(v)
         },
         Symbol(s) => {
-            match from_str::<i64>(s) {
-                Some(i) => Number(i),
-                None => Symbol(s)
+            if s == ~"true" || s == ~"false" {
+                Boolean(s == ~"true")
+            } else {
+                match from_str::<i64>(s) {
+                    Some(i) => Number(i),
+                    None => Symbol(s)
+                }
             }
         },
         Vec(s) => {
