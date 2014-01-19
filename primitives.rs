@@ -11,8 +11,7 @@ use types::Element;
 use types::EvalError;
 use types::{Number, String, Boolean, List, Vec, Character, nil};
 
-use eval::eval;
-
+mod eval;
 mod types;
 
 fn unwrap_to_nums(list: &[Element]) -> Option<~[i64]>
@@ -198,62 +197,62 @@ pub fn if_fn(list: &[Element]) -> Element
 
 #[test]
 fn test_add() {
-    assert!(eval("(+)") == Number(0));
-    assert!(eval("(+ 5)") == Number(5));
-    assert!(eval("(+ 1 1)") == Number(2));
-    assert!(eval("(+ 4 5 6)") == Number(15));
-    assert!(eval("(+ 5 -1)") == Number(4));
+    assert!(::eval::eval("(+)") == Number(0));
+    assert!(::eval::eval("(+ 5)") == Number(5));
+    assert!(::eval::eval("(+ 1 1)") == Number(2));
+    assert!(::eval::eval("(+ 4 5 6)") == Number(15));
+    assert!(::eval::eval("(+ 5 -1)") == Number(4));
 }
 
 #[test]
 fn test_sub() {
-    assert!(eval("(-)") == EvalError(~"-: Wrong number of args (0)"));
-    assert!(eval("(- 1)") == Number(-1));
-    assert!(eval("(- 1 1)") == Number(0));
-    assert!(eval("(- 2 3)") == Number(-1));
-    assert!(eval("(- 5 3)") == Number(2));
-    assert!(eval("(- 9 5 2)") == Number(2));
-    assert!(eval("(- 4 -2)") == Number(6));
+    assert!(::eval::eval("(-)") == EvalError(~"-: Wrong number of args (0)"));
+    assert!(::eval::eval("(- 1)") == Number(-1));
+    assert!(::eval::eval("(- 1 1)") == Number(0));
+    assert!(::eval::eval("(- 2 3)") == Number(-1));
+    assert!(::eval::eval("(- 5 3)") == Number(2));
+    assert!(::eval::eval("(- 9 5 2)") == Number(2));
+    assert!(::eval::eval("(- 4 -2)") == Number(6));
 }
 
 #[test]
 fn test_mul() {
-    assert!(eval("(*)") == Number(1));
-    assert!(eval("(* 2)") == Number(2));
-    assert!(eval("(* 2 3)") == Number(6));
-    assert!(eval("(* 2 0)") == Number(0));
-    assert!(eval("(* 4 -1)") == Number(-4));
+    assert!(::eval::eval("(*)") == Number(1));
+    assert!(::eval::eval("(* 2)") == Number(2));
+    assert!(::eval::eval("(* 2 3)") == Number(6));
+    assert!(::eval::eval("(* 2 0)") == Number(0));
+    assert!(::eval::eval("(* 4 -1)") == Number(-4));
 }
 
 #[test]
 fn test_div() {
-    assert!(eval("(/)") == EvalError(~"/: Wrong number of args (0)"));
-    assert!(eval("(/ 1)") == Number(1));
-    assert!(eval("(/ 2)") == Number(0));
-    assert!(eval("(/ 2 1)") == Number(2));
-    assert!(eval("(/ 4 2)") == Number(2));
-    assert!(eval("(/ 100 2 2 5)") == Number(5));
-    assert!(eval("(/ 0)") == EvalError(~"/: Divide by zero"));
-    assert!(eval("(/ 10 0)") == EvalError(~"/: Divide by zero"));
+    assert!(::eval::eval("(/)") == EvalError(~"/: Wrong number of args (0)"));
+    assert!(::eval::eval("(/ 1)") == Number(1));
+    assert!(::eval::eval("(/ 2)") == Number(0));
+    assert!(::eval::eval("(/ 2 1)") == Number(2));
+    assert!(::eval::eval("(/ 4 2)") == Number(2));
+    assert!(::eval::eval("(/ 100 2 2 5)") == Number(5));
+    assert!(::eval::eval("(/ 0)") == EvalError(~"/: Divide by zero"));
+    assert!(::eval::eval("(/ 10 0)") == EvalError(~"/: Divide by zero"));
 }
 
 #[test]
 fn test_mod() {
-    assert!(eval("(%)") == EvalError(~"%: Wrong number of args (0)"));
-    assert!(eval("(% 1)") == EvalError(~"%: Wrong number of args (1)"));
-    assert!(eval("(% 1 2 3)") == EvalError(~"%: Wrong number of args (3)"));
-    assert!(eval("(% 1 0)") == EvalError(~"%: Divide by zero"));
-    assert!(eval("(% 1 1)") == Number(0));
-    assert!(eval("(% 10 1)") == Number(0));
-    assert!(eval("(% 10 7)") == Number(3));
-    assert!(eval("(% 10 -3)") == Number(1));
-    assert!(eval("(% -10 3)") == Number(-1));
+    assert!(::eval::eval("(%)") == EvalError(~"%: Wrong number of args (0)"));
+    assert!(::eval::eval("(% 1)") == EvalError(~"%: Wrong number of args (1)"));
+    assert!(::eval::eval("(% 1 2 3)") == EvalError(~"%: Wrong number of args (3)"));
+    assert!(::eval::eval("(% 1 0)") == EvalError(~"%: Divide by zero"));
+    assert!(::eval::eval("(% 1 1)") == Number(0));
+    assert!(::eval::eval("(% 10 1)") == Number(0));
+    assert!(::eval::eval("(% 10 7)") == Number(3));
+    assert!(::eval::eval("(% 10 -3)") == Number(1));
+    assert!(::eval::eval("(% -10 3)") == Number(-1));
 }
 
 #[test]
 fn test_concat() {
-    assert!(eval("(concat [1] [2])") == List(~[Number(1), Number(2)]));
-    assert!(eval("(concat \"ab\" \"cd\")") == List(~[Character('a'),
+    assert!(::eval::eval("(concat [1] [2])") == List(~[Number(1), Number(2)]));
+    assert!(::eval::eval("(concat \"ab\" \"cd\")") == List(~[Character('a'),
                                                      Character('b'),
                                                      Character('c'),
                                                      Character('d')]));
@@ -261,20 +260,20 @@ fn test_concat() {
 
 #[test]
 fn test_equal() {
-    assert!(eval("(= 1 1)") == Boolean(true));
-    assert!(eval("(= 1 2)") == Boolean(false));
-    assert!(eval("(= 1 \"1\")") == Boolean(false));
-    assert!(eval("(= \"1\" \"1\")") == Boolean(true));
-    assert!(eval("(= [1 2] [1 2])") == Boolean(true));
-    assert!(eval("(= [1 2] [1 3])") == Boolean(false));
-    assert!(eval("(= [1 2 3] [1 2])") == Boolean(false));
+    assert!(::eval::eval("(= 1 1)") == Boolean(true));
+    assert!(::eval::eval("(= 1 2)") == Boolean(false));
+    assert!(::eval::eval("(= 1 \"1\")") == Boolean(false));
+    assert!(::eval::eval("(= \"1\" \"1\")") == Boolean(true));
+    assert!(::eval::eval("(= [1 2] [1 2])") == Boolean(true));
+    assert!(::eval::eval("(= [1 2] [1 3])") == Boolean(false));
+    assert!(::eval::eval("(= [1 2 3] [1 2])") == Boolean(false));
 }
 
 #[test]
 fn test_if_fn() {
-    assert!(eval("(if true 1 0)") == Number(1));
-    assert!(eval("(if (= 5 5) 6 4)") == Number(6));
-    assert!(eval("(if (= 5 4) 6 4)") == Number(4));
-    assert!(eval("(if (= (+ 1 2) 3) true false)") == Boolean(true));
+    assert!(::eval::eval("(if true 1 0)") == Number(1));
+    assert!(::eval::eval("(if (= 5 5) 6 4)") == Number(6));
+    assert!(::eval::eval("(if (= 5 4) 6 4)") == Number(4));
+    assert!(::eval::eval("(if (= (+ 1 2) 3) true false)") == Boolean(true));
 }
 

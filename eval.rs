@@ -5,7 +5,6 @@ use tokenizer::tokenize;
 
 use types::Element;
 use types::Symbol;
-use types::{Number, String, nil};
 use types::{List, Vec};
 use types::{Function, FuncPrimitive};
 use types::EvalError;
@@ -14,12 +13,15 @@ use primitives::{add, sub, mul, div, modfn, equal, if_fn, concat};
 
 use functypes::{RustFunc, BoundFn, Variable};
 
+mod types;
 
+#[allow(dead_code)]
 pub struct Bindings {
     bindings: ~[HashMap<~str, Element>]
 }
 
 impl Bindings {
+    #[allow(dead_code)]
     pub fn new() -> Bindings {
         let mut binding: HashMap<~str, Element> = HashMap::new();
         binding.insert(~"+", RustFunc::new(add));
@@ -34,12 +36,15 @@ impl Bindings {
         binding.insert(~"dec", BoundFn::new([~"x"], tokenize("(- x 1)")));
         Bindings { bindings: ~[binding] }
     }
+    #[allow(dead_code)]
     pub fn push(&self) -> Bindings {
         Bindings { bindings: ~[HashMap::new()] + self.bindings }
     }
+    #[allow(dead_code)]
     pub fn insert(&mut self, key: &str, value: Element) -> bool {
         self.bindings[0].insert(key.to_owned(), value)
     }
+    #[allow(dead_code)]
     pub fn get(&self, e: &str) -> Element {
         let s = e.to_owned();
         for map in self.bindings.iter() {
@@ -49,6 +54,7 @@ impl Bindings {
         }
         return EvalError(~"Not in scope");
     }
+    #[allow(dead_code)]
     pub fn contains_key(&self, e: &str) -> bool {
         for map in self.bindings.iter() {
             if map.contains_key(&e.to_owned()) {
@@ -57,6 +63,7 @@ impl Bindings {
         }
         return false;
     }
+    #[allow(dead_code)]
     fn eval_form(&self, form: &[Element]) -> Element
     {
         //println!("eval_form({:u}): {:?}", self.bindings.len(), form);
@@ -101,6 +108,7 @@ impl Bindings {
 
         }
     }
+    #[allow(dead_code)]
     pub fn eval(&self, form: Element) -> Element
     {
         //println!("eval({:u}): {:?}", self.bindings.len(), form);
@@ -135,17 +143,17 @@ pub fn eval(s: &str) -> Element
 
 #[test]
 fn test_basic_eval() {
-    assert!(eval("1") == Number(1));
-    assert!(eval("1\n") == Number(1));
-    assert!(eval("") == nil);
-    assert!(eval("\n") == nil);
+    assert!(eval("1") == ::types::Number(1));
+    assert!(eval("1\n") == ::types::Number(1));
+    assert!(eval("") == ::types::nil);
+    assert!(eval("\n") == ::types::nil);
     assert!(eval("()") == List(~[]));
     assert!(eval("()\n") == List(~[]));
     assert!(eval("[]") == Vec(~[]));
-    assert!(eval("\"\"") == String(~""));
-    assert!(eval("\"test string\"") == String(~"test string"));
-    assert!(eval("\"(+ 1 1)\"") == String(~"(+ 1 1)"));
-    assert!(eval("[(+ 1 1)]") == Vec(~[Number(2)]));
+    assert!(eval("\"\"") == ::types::String(~""));
+    assert!(eval("\"test string\"") == ::types::String(~"test string"));
+    assert!(eval("\"(+ 1 1)\"") == ::types::String(~"(+ 1 1)"));
+    assert!(eval("[(+ 1 1)]") == Vec(~[::types::Number(2)]));
 }
 
 

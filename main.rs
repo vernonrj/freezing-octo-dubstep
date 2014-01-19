@@ -1,6 +1,5 @@
 extern mod extra;
 
-use std::vec;
 use std::c_str::CString;
 use std::libc::c_char;
 use tokenizer::tokenize;
