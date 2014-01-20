@@ -1,3 +1,7 @@
+/**
+ * @file
+ * @brief Evaluation module
+ */
 use std::hashmap::HashMap;
 use std::iter::Iterator;
 
@@ -16,6 +20,9 @@ use functypes::{RustFunc, BoundFn, Variable};
 mod types;
 
 #[allow(dead_code)]
+/**
+ * @brief binding system implementation
+ */
 pub struct Bindings {
     bindings: ~[HashMap<~str, Element>]
 }
@@ -157,6 +164,10 @@ impl Bindings {
         self.eval_elem(parsed)
     }
     #[allow(dead_code)]
+    /**
+     * @brief ``if`` function
+     * @param list: list of elements: [BOOL TRUE-FORM FALSE-FORM]
+     */
     fn if_fn(&mut self, list: &[Element]) -> Element
     {
         // builtin if function
@@ -173,6 +184,10 @@ impl Bindings {
         }
     }
     #[allow(dead_code)]
+    /**
+     * @brief Bind a value, allowing it to be called later
+     * @param vals      list of elements: [name value]
+     */
     fn def(&mut self, vals: &[Element]) -> Element
     {
         // bind a value, allowing it to be called later
@@ -191,6 +206,10 @@ impl Bindings {
         }
     }
     #[allow(dead_code)]
+    /**
+     * @brief Bind a function, allowing it to be called later.
+     * @param vals      list of elements: [name [arg1 arg2 ...] form]
+     */
     fn defn(&mut self, vals: &[Element]) -> Element {
         // bind a function, allowing it to be called later.
         // Syntactic sugar for
@@ -220,6 +239,11 @@ impl Bindings {
             nil
         }
     }
+    #[allow(dead_code)]
+    /**
+     * @brief create a fn without binding it to a variable
+     * @param vals:     list of elements: [[arg1 arg2 ...] form]
+     */
     fn fn_nobind(&mut self, vals: &[Element]) -> Element {
         // Create a function (don't bind it to a variable)
         // TODO: define in terms of defmacro when defmacro works
@@ -241,6 +265,11 @@ impl Bindings {
             BoundFn::new(args, form)
         }
     }
+    #[allow(dead_code)]
+    /**
+     * @brief create a macro and bind it
+     * @param vals:     list of elements: [name [arg1 arg2 ...] form]
+     */
     fn defmacro(&mut self, vals: &[Element]) -> Element {
         // Create a macro and bind it.
         // TODO: implement
