@@ -36,10 +36,25 @@ impl Clone for RustFunc {
     }
 }
 
+impl ToStr for RustFunc {
+    fn to_str(&self) -> ~str {
+        format!("@builtin{:u}", self.tag)
+    }
+}
+
 #[deriving(Clone, Eq)]
 pub enum ArgBinding {
     Variable(~str),
     Variadic(~str)
+}
+
+impl ToStr for ArgBinding {
+    fn to_str(&self) -> ~str {
+        match self.clone() {
+            Variable(s) => s,
+            Variadic(s) => format!("&{:s}", s)
+        }
+    }
 }
 
 #[deriving(Clone, Eq)]
@@ -67,3 +82,10 @@ impl BoundFn {
         BoundFn::create_fn(bindings, func, true)
     }
 }
+
+impl ToStr for BoundFn {
+    fn to_str(&self) -> ~str {
+        format!("(fn {:s} {:s})", self.bindings.to_str(), self.f.to_str())
+    }
+}
+

@@ -63,7 +63,8 @@ fn main()
         match line {
             Some(s) => {
                 let evald = bindings.eval(s);
-                println!("{:?}", evald);
+                println(evald.to_str());
+                //println!("{:?}", evald);
             },
             None => return
         }
