@@ -68,7 +68,7 @@ impl Bindings {
         return false;
     }
     #[allow(dead_code)]
-    fn eval_form(&self, form: &[Element]) -> Element
+    fn eval_form(&mut self, form: &[Element]) -> Element
     {
         //println!("eval_form({:u}): {:?}", self.bindings.len(), form);
         let mut b = self.push();
@@ -80,27 +80,43 @@ impl Bindings {
         match form[0] {
             Symbol(ref sym) => {
                 // lookup in bindings
-                if sym.clone() == ~"if" {
+                let symclone = sym.clone();
+                if symclone == ~"if" {
                     // if is a special case
                     self.if_fn(vals)
+                } else if symclone == ~"def" {
+                    // bind to toplevel
+                    if vals.len() != 2 {
+                        EvalError(~"expected 2 args")
+                    } else {
+                        let (name, form) = (vals[0].clone(), b.eval_elem(vals[1].clone()));
+                        match name {
+                            Symbol(s) => {
+                                let toplevel = self.bindings.len() - 1;
+                                self.bindings[toplevel].insert(s, form);
+                                nil
+                            },
+                            _ => EvalError(~"first arg not of type symbol")
+                        }
+                    }
                 } else if b.contains_key(sym.to_owned()) {
                     let bound = b.get(sym.to_owned()).clone();
                     //println!("eval({:u}): sym {:?} resolves to {:?}",
                     //        self.bindings.len(), sym, bound);
-                    let vals_expanded = vals.map(|x| b.eval(x.clone()));
+                    let vals_expanded = vals.map(|x| b.eval_elem(x.clone()));
                     self.eval_form(~[bound] + vals_expanded)
                 } else {
                     EvalError(~"Symbol Not defined")
                 }
             },
             List(ref l) => {
-                let vals_expanded = vals.map(|x| b.eval(x.clone()));
+                let vals_expanded = vals.map(|x| b.eval_elem(x.clone()));
                 let newform = ~[b.eval_form(*l)] + vals_expanded;
                 b.eval_form(newform)
             },
             FuncPrimitive(ref fptr) => {
                 // lookup name, pass the rest of the list in
-                let vals_expanded = vals.map(|x| b.eval(x.clone()));
+                let vals_expanded = vals.map(|x| b.eval_elem(x.clone()));
                 let f = fptr.f;
                 f(vals_expanded)
             },
@@ -111,19 +127,19 @@ impl Bindings {
                         _ => return EvalError(~"Variadic not implemented")
                     };
                 }
-                b.eval(fptr.f.clone())
+                b.eval_elem(fptr.f.clone())
             }
             _ => EvalError(~"Failed to evaluate form")
 
         }
     }
     #[allow(dead_code)]
-    pub fn eval(&self, form: Element) -> Element
+    pub fn eval_elem(&mut self, form: Element) -> Element
     {
         //println!("eval({:u}): {:?}", self.bindings.len(), form);
         match form {
             List(l) => self.eval_form(l),
-            Vec(v) => Vec(v.map(|x| self.eval(x.clone()))),
+            Vec(v) => Vec(v.map(|x| self.eval_elem(x.clone()))),
             Symbol(ref sym) => {
                 // lookup in bindings
                 if self.contains_key(sym.to_owned()) {
@@ -139,16 +155,22 @@ impl Bindings {
         }
     }
     #[allow(dead_code)]
-    fn if_fn(&self, list: &[Element]) -> Element
+    pub fn eval(&mut self, s: &str) -> Element
+    {
+        let parsed = tokenize(s);
+        self.eval_elem(parsed)
+    }
+    #[allow(dead_code)]
+    fn if_fn(&mut self, list: &[Element]) -> Element
     {
         let list_len = list.len();
         if list_len > 3 || list_len < 2 {
             return EvalError(format!("if: wrong number of args ({:u})", list_len));
         }
         let rest = list.slice_from(1);
-        match self.eval(list[0].clone()) {
-            Boolean(true) => self.eval(rest[0].clone()),
-            Boolean(false) if list_len > 2 => self.eval(rest[1].clone()),
+        match self.eval_elem(list[0].clone()) {
+            Boolean(true) => self.eval_elem(rest[0].clone()),
+            Boolean(false) if list_len > 2 => self.eval_elem(rest[1].clone()),
             Boolean(false) if list_len == 2 => nil,
             _ => EvalError(~"if: first element must be boolean")
         }
@@ -159,9 +181,9 @@ impl Bindings {
 #[allow(dead_code)]
 pub fn eval(s: &str) -> Element
 {
-    let bindings = Bindings::new();
+    let mut bindings = Bindings::new();
     let parsed = tokenize(s);
-    bindings.eval(parsed)
+    bindings.eval_elem(parsed)
 }
 
 
@@ -190,3 +212,18 @@ fn test_if_fn() {
 }
 
 
+#[test]
+fn test_def() {
+    let mut bindings = Bindings::new();
+    // basic assignment
+    bindings.eval("(def a 5)");
+    assert!(bindings.eval("a") == ::types::Number(5));
+    assert!(bindings.eval("(+ a 5)") == ::types::Number(10));
+    assert!(bindings.eval("(inc a)") == ::types::Number(6));
+    // test eager evaluation of form
+    bindings.eval("(def x (+ 5 6))");
+    assert!(bindings.eval("x") == ::types::Number(11));
+    // check for weird self-assign conditions
+    bindings.eval("(def a (+ a 1))");
+    assert!(bindings.eval("a") == ::types::Number(6));
+}

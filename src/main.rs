@@ -2,7 +2,6 @@ extern mod extra;
 
 use std::c_str::CString;
 use std::libc::c_char;
-use tokenizer::tokenize;
 use std::ptr;
 
 use extra::getopts::{optflag,getopts};
@@ -38,7 +37,7 @@ fn print_version(program: &str)
 #[allow(dead_code)]
 fn main()
 {
-    let bindings = Bindings::new();
+    let mut bindings = Bindings::new();
     let args = os::args();
     let program = args[0].clone();
     let opts = ~[
@@ -63,9 +62,7 @@ fn main()
         };
         match line {
             Some(s) => {
-                let parsed = tokenize(s);
-                let evald = bindings.eval(parsed.clone());
-                //let parsed = eval(bindings, line);
+                let evald = bindings.eval(s);
                 println!("{:?}", evald);
             },
             None => return
