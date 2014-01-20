@@ -78,6 +78,7 @@ impl BoundFn {
     pub fn new(bindings: &[~str], func: Element) -> Element {
         BoundFn::create_fn(bindings, func, false)
     }
+    #[allow(dead_code)]
     pub fn new_macro(bindings: &[~str], func: Element) -> Element {
         BoundFn::create_fn(bindings, func, true)
     }

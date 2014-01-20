@@ -84,90 +84,15 @@ impl Bindings {
                     self.if_fn(vals)
                 } else if symclone == ~"def" {
                     // bind to toplevel
-                    if vals.len() != 2 {
-                        EvalError(~"expected 2 args")
-                    } else {
-                        let (name, form) = (vals[0].clone(), b.eval_elem(vals[1].clone()));
-                        match name {
-                            Symbol(s) => {
-                                let toplevel = self.bindings.len() - 1;
-                                self.bindings[toplevel].insert(s, form);
-                                nil
-                            },
-                            _ => EvalError(~"first arg not of type symbol")
-                        }
-                    }
+                    self.def(vals)
                 } else if symclone == ~"defn" {
-                    // bind function to toplevel
-                    // TODO: when defmacro works, use that instead
-                    if vals.len() != 3 {
-                        EvalError(~"expexted 3 args")
-                    } else {
-                        let name = match vals[0].clone() {
-                            Symbol(s) => s,
-                            _ => return EvalError(~"name must be a symbol")
-                        };
-                        let args_v = match vals[1].clone() {
-                            Vec(v) => v,
-                            _ => return EvalError(~"args must be a vector")
-                        };
-                        let mut args: ~[~str] = ~[];
-                        for i in args_v.iter() {
-                            match i.clone() {
-                                Symbol(s) => args.push(s.clone()),
-                                _ => return EvalError(~"args must be symbols")
-                            }
-                        }
-                        let form = vals[2].clone();
-                        let toplevel = self.bindings.len() - 1;
-                        self.bindings[toplevel].insert(name, BoundFn::new(args, form));
-                        nil
-                    }
+                    // bind a function to toplevel
+                    self.defn(vals)
                 } else if symclone == ~"fn" {
-                    // create an fn
-                    // TODO: when defmacro is defined, use that instead
-                    if vals.len() != 2 {
-                        EvalError(~"expected 2 args")
-                    } else {
-                        let (args_wrapped, form) = (vals[0].clone(), vals[1].clone());
-                        let args_v: ~[Element] = match args_wrapped {
-                            Vec(v) => v,
-                            _ => return EvalError(~"args must be in a vector")
-                        };
-                        let mut args: ~[~str] = ~[];
-                        for i in args_v.iter() {
-                            match i.clone() {
-                                Symbol(s) => args.push(s.clone()),
-                                _ => return EvalError(~"args must be symbols")
-                            }
-                        }
-                        BoundFn::new(args, form)
-                    }
+                    // create a fn (don't bind it though)
+                    self.fn_nobind(vals)
                 } else if symclone == ~"defmacro" {
-                    // create a macro
-                    if vals.len() != 3 {
-                        EvalError(~"expected 3 args")
-                    } else {
-                        let name = match vals[0].clone() {
-                            Symbol(s) => s,
-                            _ => return EvalError(~"name must be a symbol")
-                        };
-                        let args_v = match vals[1].clone() {
-                            Vec(v) => v,
-                            _ => return EvalError(~"args must be a vector")
-                        };
-                        let mut args: ~[~str] = ~[];
-                        for i in args_v.iter() {
-                            match i.clone() {
-                                Symbol(s) => args.push(s.clone()),
-                                _ => return EvalError(~"args must be symbols")
-                            }
-                        }
-                        let form = vals[2].clone();
-                        let toplevel = self.bindings.len() - 1;
-                        self.bindings[toplevel].insert(name, BoundFn::new_macro(args, form));
-                        nil
-                    }
+                    self.defmacro(vals)
                 } else if b.contains_key(sym.to_owned()) {
                     let bound = b.get(sym.to_owned()).clone();
                     //println!("eval({:u}): sym {:?} resolves to {:?}",
@@ -244,6 +169,75 @@ impl Bindings {
             Boolean(false) if list_len == 2 => nil,
             _ => EvalError(~"if: first element must be boolean")
         }
+    }
+    #[allow(dead_code)]
+    fn def(&mut self, vals: &[Element]) -> Element {
+        if vals.len() != 2 {
+            EvalError(~"expected 2 args")
+        } else {
+            let (name, form) = (vals[0].clone(), self.eval_elem(vals[1].clone()));
+            match name {
+                Symbol(s) => {
+                    let toplevel = self.bindings.len() - 1;
+                    self.bindings[toplevel].insert(s, form);
+                    nil
+                },
+                _ => EvalError(~"first arg not of type symbol")
+            }
+        }
+    }
+    #[allow(dead_code)]
+    fn defn(&mut self, vals: &[Element]) -> Element {
+        // bind function to toplevel
+        // TODO: when defmacro works, use that instead
+        if vals.len() != 3 {
+            EvalError(~"expexted 3 args")
+        } else {
+            let name = match vals[0].clone() {
+                Symbol(s) => s,
+                _ => return EvalError(~"name must be a symbol")
+            };
+            let args_v = match vals[1].clone() {
+                Vec(v) => v,
+                _ => return EvalError(~"args must be a vector")
+            };
+            let mut args: ~[~str] = ~[];
+            for i in args_v.iter() {
+                match i.clone() {
+                    Symbol(s) => args.push(s.clone()),
+                    _ => return EvalError(~"args must be symbols")
+                }
+            }
+            let form = vals[2].clone();
+            let toplevel = self.bindings.len() - 1;
+            self.bindings[toplevel].insert(name, BoundFn::new(args, form));
+            nil
+        }
+    }
+    fn fn_nobind(&mut self, vals: &[Element]) -> Element {
+        // create an fn
+        // TODO: when defmacro is defined, use that instead
+        if vals.len() != 2 {
+            EvalError(~"expected 2 args")
+        } else {
+            let (args_wrapped, form) = (vals[0].clone(), vals[1].clone());
+            let args_v: ~[Element] = match args_wrapped {
+                Vec(v) => v,
+                _ => return EvalError(~"args must be in a vector")
+            };
+            let mut args: ~[~str] = ~[];
+            for i in args_v.iter() {
+                match i.clone() {
+                    Symbol(s) => args.push(s.clone()),
+                    _ => return EvalError(~"args must be symbols")
+                }
+            }
+            BoundFn::new(args, form)
+        }
+    }
+    fn defmacro(&mut self, vals: &[Element]) -> Element {
+        println("WARN: defmacro not implemented yet, using defn instead");
+        self.defn(vals)
     }
 }
 
