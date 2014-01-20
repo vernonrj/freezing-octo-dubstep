@@ -45,17 +45,25 @@ pub enum ArgBinding {
 #[deriving(Clone, Eq)]
 pub struct BoundFn {
     bindings: ~[ArgBinding],
-    f: Element
+    f: Element,
+    is_macro: bool
 }
 
 impl BoundFn {
-    pub fn new(bindings: &[~str], func: Element) -> Element {
+    fn create_fn(bindings: &[~str], func: Element, is_macro: bool) -> Element {
         let newbindings = bindings.map(|x| {
             Variable(x.to_owned())
         });
         Function(~BoundFn {
             bindings: newbindings,
-            f: func
+            f: func,
+            is_macro: is_macro
         })
+    }
+    pub fn new(bindings: &[~str], func: Element) -> Element {
+        BoundFn::create_fn(bindings, func, false)
+    }
+    pub fn new_macro(bindings: &[~str], func: Element) -> Element {
+        BoundFn::create_fn(bindings, func, true)
     }
 }

@@ -31,9 +31,9 @@ impl Bindings {
         binding.insert(~"%", RustFunc::new(modfn));
         binding.insert(~"=", RustFunc::new(equal));
         binding.insert(~"concat", RustFunc::new(concat));
-        binding.insert(~"not", BoundFn::new([~"x"], tokenize("(if x false true)")));
-        binding.insert(~"if-not", BoundFn::new([~"test", ~"then", ~"else"],
-            tokenize("(if (not test) then else)")));
+        //binding.insert(~"not", BoundFn::new_macro([~"x"], tokenize("(if x false true)")));
+        //binding.insert(~"if-not", BoundFn::new_macro([~"test", ~"then", ~"else"],
+        //    tokenize("(if (not test) then else)")));
         binding.insert(~"inc", BoundFn::new([~"x"], tokenize("(+ x 1)")));
         binding.insert(~"dec", BoundFn::new([~"x"], tokenize("(- x 1)")));
         Bindings { bindings: ~[binding] }
@@ -117,6 +117,31 @@ impl Bindings {
                         }
                         BoundFn::new(args, form)
                     }
+                } else if symclone == ~"defmacro" {
+                    // create a macro
+                    if vals.len() != 3 {
+                        EvalError(~"expected 3 args")
+                    } else {
+                        let name = match vals[0].clone() {
+                            Symbol(s) => s,
+                            _ => return EvalError(~"name must be a symbol")
+                        };
+                        let args_v = match vals[1].clone() {
+                            Vec(v) => v,
+                            _ => return EvalError(~"args must be a vector")
+                        };
+                        let mut args: ~[~str] = ~[];
+                        for i in args_v.iter() {
+                            match i.clone() {
+                                Symbol(s) => args.push(s.clone()),
+                                _ => return EvalError(~"args must be symbols")
+                            }
+                        }
+                        let form = vals[2].clone();
+                        let toplevel = self.bindings.len() - 1;
+                        self.bindings[toplevel].insert(name, BoundFn::new_macro(args, form));
+                        nil
+                    }
                 } else if b.contains_key(sym.to_owned()) {
                     let bound = b.get(sym.to_owned()).clone();
                     //println!("eval({:u}): sym {:?} resolves to {:?}",
@@ -145,6 +170,7 @@ impl Bindings {
                         _ => return EvalError(~"Variadic not implemented")
                     };
                 }
+                // TODO: different behavior for macros?
                 b.eval_elem(fptr.f.clone())
             }
             _ => EvalError(~"Failed to evaluate form")
