@@ -40,3 +40,14 @@ impl ToStr for Element {
         }
     }
 }
+
+#[test]
+fn test_element_tostr() {
+    assert!(Number(1).to_str() == ~"1");
+    assert!(Symbol(~"+").to_str() == ~"+");
+    assert!(String(~"test string").to_str() == ~"\"test string\"");
+    assert!(Character('c').to_str() == ~"c");
+    assert!(Boolean(true).to_str() == ~"true");
+    assert!(List(~[Symbol(~"+"), Number(1), Number(2)]).to_str() == ~"(+ 1 2)");
+    assert!(Vec(~[Number(1), Number(2)]).to_str() == ~"[1 2]");
+}

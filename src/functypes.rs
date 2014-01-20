@@ -89,3 +89,9 @@ impl ToStr for BoundFn {
     }
 }
 
+
+#[test]
+fn test_boundfn_to_str() {
+    let list = ~[::types::Symbol(~"+"), ::types::Symbol(~"x"), ::types::Number(1)];
+    assert!(BoundFn::new([~"x"], ::types::List(list)).to_str() == ~"(fn [x] (+ x 1))");
+}
