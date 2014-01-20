@@ -308,3 +308,9 @@ fn test_fn() {
     assert!(bindings.eval("(fac 5)") == ::types::Number(120));
 }
 
+#[test]
+fn test_defn() {
+    let mut bindings = Bindings::new();
+    bindings.eval("(defn plus [x y] (+ x y))");
+    assert!(bindings.eval("(plus 5 6)") == ::types::Number(11));
+}
