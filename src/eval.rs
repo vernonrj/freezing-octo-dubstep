@@ -131,7 +131,7 @@ impl Bindings {
     #[allow(dead_code)]
     pub fn eval_elem(&mut self, form: Element) -> Element
     {
-        //println!("eval({:u}): {:?}", self.bindings.len(), form);
+        // evaluate a single element, entry-point into eval_form
         match form {
             List(l) => self.eval_form(l),
             Vec(v) => Vec(v.map(|x| self.eval_elem(x.clone()))),
@@ -152,12 +152,14 @@ impl Bindings {
     #[allow(dead_code)]
     pub fn eval(&mut self, s: &str) -> Element
     {
+        // tokenize, then eval, a string
         let parsed = tokenize(s);
         self.eval_elem(parsed)
     }
     #[allow(dead_code)]
     fn if_fn(&mut self, list: &[Element]) -> Element
     {
+        // builtin if function
         let list_len = list.len();
         if list_len > 3 || list_len < 2 {
             return EvalError(format!("if: wrong number of args ({:u})", list_len));
@@ -171,7 +173,9 @@ impl Bindings {
         }
     }
     #[allow(dead_code)]
-    fn def(&mut self, vals: &[Element]) -> Element {
+    fn def(&mut self, vals: &[Element]) -> Element
+    {
+        // bind a value, allowing it to be called later
         if vals.len() != 2 {
             EvalError(~"expected 2 args")
         } else {
@@ -188,7 +192,9 @@ impl Bindings {
     }
     #[allow(dead_code)]
     fn defn(&mut self, vals: &[Element]) -> Element {
-        // bind function to toplevel
+        // bind a function, allowing it to be called later.
+        // Syntactic sugar for
+        //      (def NAME (fn [ARG1, ...] FORM))
         // TODO: when defmacro works, use that instead
         if vals.len() != 3 {
             EvalError(~"expexted 3 args")
@@ -215,8 +221,8 @@ impl Bindings {
         }
     }
     fn fn_nobind(&mut self, vals: &[Element]) -> Element {
-        // create an fn
-        // TODO: when defmacro is defined, use that instead
+        // Create a function (don't bind it to a variable)
+        // TODO: define in terms of defmacro when defmacro works
         if vals.len() != 2 {
             EvalError(~"expected 2 args")
         } else {
@@ -236,6 +242,8 @@ impl Bindings {
         }
     }
     fn defmacro(&mut self, vals: &[Element]) -> Element {
+        // Create a macro and bind it.
+        // TODO: implement
         println("WARN: defmacro not implemented yet, using defn instead");
         self.defn(vals)
     }
@@ -245,6 +253,8 @@ impl Bindings {
 #[allow(dead_code)]
 pub fn eval(s: &str) -> Element
 {
+    // one-off eval function. Good if you just need a
+    // one-liner
     let mut bindings = Bindings::new();
     bindings.eval(s)
 }
@@ -294,10 +304,12 @@ fn test_def() {
 #[test]
 fn test_fn() {
     let mut bindings = Bindings::new();
+    // test fn without binding to var
     assert!(eval("((fn [x] (+ x 5)) 6)") == ::types::Number(11));
+    // bind fn to var and test
     bindings.eval("(def f (fn [x] (+ x 1)))");
     assert!(bindings.eval("(f 5)") == ::types::Number(6));
-    // define factorial
+    // Test function recursion
     bindings.eval("(def fac (fn [x] (if (= x 0) 1 (* x (fac (dec x))))))");
     assert!(bindings.eval("(fac 5)") == ::types::Number(120));
 }
@@ -307,4 +319,8 @@ fn test_defn() {
     let mut bindings = Bindings::new();
     bindings.eval("(defn plus [x y] (+ x y))");
     assert!(bindings.eval("(plus 5 6)") == ::types::Number(11));
+    bindings.eval("(defn plus [x] (+ x 1))");
+    assert!(bindings.eval("(plus 5)") == ::types::Number(6));
 }
+
+
