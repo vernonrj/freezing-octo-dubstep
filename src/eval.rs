@@ -97,6 +97,32 @@ impl Bindings {
                             _ => EvalError(~"first arg not of type symbol")
                         }
                     }
+                } else if symclone == ~"defn" {
+                    // bind function to toplevel
+                    // TODO: when defmacro works, use that instead
+                    if vals.len() != 3 {
+                        EvalError(~"expexted 3 args")
+                    } else {
+                        let name = match vals[0].clone() {
+                            Symbol(s) => s,
+                            _ => return EvalError(~"name must be a symbol")
+                        };
+                        let args_v = match vals[1].clone() {
+                            Vec(v) => v,
+                            _ => return EvalError(~"args must be a vector")
+                        };
+                        let mut args: ~[~str] = ~[];
+                        for i in args_v.iter() {
+                            match i.clone() {
+                                Symbol(s) => args.push(s.clone()),
+                                _ => return EvalError(~"args must be symbols")
+                            }
+                        }
+                        let form = vals[2].clone();
+                        let toplevel = self.bindings.len() - 1;
+                        self.bindings[toplevel].insert(name, BoundFn::new(args, form));
+                        nil
+                    }
                 } else if symclone == ~"fn" {
                     // create an fn
                     // TODO: when defmacro is defined, use that instead
