@@ -36,8 +36,6 @@ impl Bindings {
             tokenize("(if (not test) then else)")));
         binding.insert(~"inc", BoundFn::new([~"x"], tokenize("(+ x 1)")));
         binding.insert(~"dec", BoundFn::new([~"x"], tokenize("(- x 1)")));
-        binding.insert(~"factorial", BoundFn::new([~"x"],
-            tokenize("(if (= x 0) 1 (* x (factorial (dec x))))")));
         Bindings { bindings: ~[binding] }
     }
     #[allow(dead_code)]
@@ -98,6 +96,26 @@ impl Bindings {
                             },
                             _ => EvalError(~"first arg not of type symbol")
                         }
+                    }
+                } else if symclone == ~"fn" {
+                    // create an fn
+                    // TODO: when defmacro is defined, use that instead
+                    if vals.len() != 2 {
+                        EvalError(~"expected 2 args")
+                    } else {
+                        let (args_wrapped, form) = (vals[0].clone(), vals[1].clone());
+                        let args_v: ~[Element] = match args_wrapped {
+                            Vec(v) => v,
+                            _ => return EvalError(~"args must be in a vector")
+                        };
+                        let mut args: ~[~str] = ~[];
+                        for i in args_v.iter() {
+                            match i.clone() {
+                                Symbol(s) => args.push(s.clone()),
+                                _ => return EvalError(~"args must be symbols")
+                            }
+                        }
+                        BoundFn::new(args, form)
                     }
                 } else if b.contains_key(sym.to_owned()) {
                     let bound = b.get(sym.to_owned()).clone();
@@ -182,8 +200,7 @@ impl Bindings {
 pub fn eval(s: &str) -> Element
 {
     let mut bindings = Bindings::new();
-    let parsed = tokenize(s);
-    bindings.eval_elem(parsed)
+    bindings.eval(s)
 }
 
 
@@ -227,3 +244,15 @@ fn test_def() {
     bindings.eval("(def a (+ a 1))");
     assert!(bindings.eval("a") == ::types::Number(6));
 }
+
+#[test]
+fn test_fn() {
+    let mut bindings = Bindings::new();
+    assert!(eval("((fn [x] (+ x 5)) 6)") == ::types::Number(11));
+    bindings.eval("(def f (fn [x] (+ x 1)))");
+    assert!(bindings.eval("(f 5)") == ::types::Number(6));
+    // define factorial
+    bindings.eval("(def fac (fn [x] (if (= x 0) 1 (* x (fac (dec x))))))");
+    assert!(bindings.eval("(fac 5)") == ::types::Number(120));
+}
+

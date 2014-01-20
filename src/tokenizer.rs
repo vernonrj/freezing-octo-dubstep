@@ -109,15 +109,11 @@ fn tokenize_infer_types(token: Element) -> Element
 {
     match token {
         List(l) => {
-            let mut v: ~[Element] = ~[];
             if l.len() > 0 {
-                v.push(l[0].clone());
-                let rest = l.slice_from(1);
-                for elem in rest.iter() {
-                    v.push(tokenize_infer_types(elem.clone()));
-                }
+                List(l.map(|x| tokenize_infer_types(x.clone())))
+            } else {
+                List(l)
             }
-            List(v)
         },
         Symbol(s) => {
             if s == ~"true" || s == ~"false" {
